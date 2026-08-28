@@ -47,4 +47,55 @@ local Button = Tab:CreateButton({
    end,
 })
 
+-- New Components Examples
+
+-- Progress Bar Example
+local Section2 = Tab:CreateSection("New Components")
+
+local ProgressBar = Tab:CreateProgressBar({
+   Name = "Loading Progress",
+   Value = 0.3, -- Initial value (0-1)
+   Callback = function(Value)
+      print("Progress changed to: " .. tostring(Value))
+   end,
+})
+
+-- Simulate progress
+task.spawn(function()
+   for i = 0, 10 do
+      task.wait(0.5)
+      ProgressBar:Set(i / 10)
+   end
+end)
+
+-- Radio Button Group Example
+local RadioButtonGroup = Tab:CreateRadioButtonGroup({
+   Name = "Select Difficulty",
+   Options = {"Easy", "Medium", "Hard", "Expert"},
+   CurrentOption = "Medium",
+   Callback = function(SelectedOption)
+      print("Selected difficulty: " .. SelectedOption)
+   end,
+})
+
+-- Checkbox Group Example
+local CheckboxGroup = Tab:CreateCheckboxGroup({
+   Name = "Select Features",
+   Options = {"Auto Farm", "Auto Collect", "Speed Hack", "Jump Hack"},
+   CurrentOptions = {"Auto Farm"},
+   Callback = function(SelectedOptions)
+      print("Selected features: " .. table.concat(SelectedOptions, ", "))
+   end,
+})
+
+-- Internal Tabs Example
+local InternalTabs = Tab:CreateInternalTabs({
+   Name = "Settings Categories",
+   Tabs = {"General", "Advanced", "Experimental"},
+   CurrentTab = "General",
+   Callback = function(SelectedTab)
+      print("Switched to tab: " .. SelectedTab)
+   end,
+})
+
 Rayfield:LoadConfiguration()

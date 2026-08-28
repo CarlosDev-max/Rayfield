@@ -3565,6 +3565,554 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return SliderSettings
 		end
 
+		-- ProgressBar
+		function Tab:CreateProgressBar(ProgressBarSettings)
+			local ProgressBarValue = {}
+			
+			-- Create ProgressBar container
+			local ProgressBar = Instance.new("Frame")
+			ProgressBar.Name = ProgressBarSettings.Name
+			ProgressBar.Size = UDim2.new(1, -10, 0, 35)
+			ProgressBar.BackgroundTransparency = 1
+			ProgressBar.Parent = TabPage
+			ProgressBar.Visible = true
+			
+			-- Title
+			local Title = Instance.new("TextLabel")
+			Title.Name = "Title"
+			Title.Size = UDim2.new(1, 0, 0, 20)
+			Title.Position = UDim2.new(0, 0, 0, 0)
+			Title.BackgroundTransparency = 1
+			Title.Text = ProgressBarSettings.Name
+			Title.TextColor3 = SelectedTheme.TextColor
+			Title.TextSize = 14
+			Title.Font = Enum.Font.Gotham
+			Title.TextXAlignment = Enum.TextXAlignment.Left
+			Title.Parent = ProgressBar
+			
+			-- Progress container
+			local ProgressContainer = Instance.new("Frame")
+			ProgressContainer.Name = "ProgressContainer"
+			ProgressContainer.Size = UDim2.new(1, 0, 0, 10)
+			ProgressContainer.Position = UDim2.new(0, 0, 0, 22)
+			ProgressContainer.BackgroundColor3 = SelectedTheme.SliderBackground
+			ProgressContainer.BorderSizePixel = 0
+			ProgressContainer.Parent = ProgressBar
+			
+			local ProgressStroke = Instance.new("UIStroke")
+			ProgressStroke.Color = SelectedTheme.SliderStroke
+			ProgressStroke.Thickness = 1
+			ProgressStroke.Parent = ProgressContainer
+			
+			-- Progress fill
+			local ProgressFill = Instance.new("Frame")
+			ProgressFill.Name = "ProgressFill"
+			ProgressFill.Size = UDim2.new(ProgressBarSettings.Value or 0, 0, 1, 0)
+			ProgressFill.BackgroundColor3 = SelectedTheme.SliderProgress
+			ProgressFill.BorderSizePixel = 0
+			ProgressFill.Parent = ProgressContainer
+			
+			local ProgressFillStroke = Instance.new("UIStroke")
+			ProgressFillStroke.Color = SelectedTheme.SliderStroke
+			ProgressFillStroke.Thickness = 1
+			ProgressFillStroke.Parent = ProgressFill
+			
+			-- Percentage text
+			local PercentageText = Instance.new("TextLabel")
+			PercentageText.Name = "PercentageText"
+			PercentageText.Size = UDim2.new(0, 50, 1, 0)
+			PercentageText.Position = UDim2.new(1, -55, 0, 0)
+			PercentageText.BackgroundTransparency = 1
+			PercentageText.Text = tostring(math.floor((ProgressBarSettings.Value or 0) * 100)) .. "%"
+			PercentageText.TextColor3 = SelectedTheme.TextColor
+			PercentageText.TextSize = 12
+			PercentageText.Font = Enum.Font.Gotham
+			PercentageText.TextXAlignment = Enum.TextXAlignment.Right
+			PercentageText.Parent = ProgressBar
+			
+			-- Initial animation
+			ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+			TweenService:Create(ProgressFill, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Size = UDim2.new(ProgressBarSettings.Value or 0, 0, 1, 0)}):Play()
+			
+			-- Set function
+			function ProgressBarValue:Set(NewValue)
+				NewValue = math.clamp(NewValue, 0, 1)
+				TweenService:Create(ProgressFill, TweenInfo.new(0.45, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(NewValue, 0, 1, 0)}):Play()
+				PercentageText.Text = tostring(math.floor(NewValue * 100)) .. "%"
+				
+				if ProgressBarSettings.Callback then
+					local Success, Response = pcall(function()
+						ProgressBarSettings.Callback(NewValue)
+					end)
+					if not Success then
+						print("Rayfield | "..ProgressBarSettings.Name.." Callback Error " ..tostring(Response))
+					end
+				end
+			end
+			
+			-- Get function
+			function ProgressBarValue:Get()
+				return ProgressFill.Size.X.Scale
+			end
+			
+			-- Theme update
+			Rayfield.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				ProgressContainer.BackgroundColor3 = SelectedTheme.SliderBackground
+				ProgressStroke.Color = SelectedTheme.SliderStroke
+				ProgressFill.BackgroundColor3 = SelectedTheme.SliderProgress
+				ProgressFillStroke.Color = SelectedTheme.SliderStroke
+				Title.TextColor3 = SelectedTheme.TextColor
+				PercentageText.TextColor3 = SelectedTheme.TextColor
+			end)
+			
+			return ProgressBarValue
+		end
+
+		-- RadioButtonGroup
+		function Tab:CreateRadioButtonGroup(RadioButtonGroupSettings)
+			local RadioButtonGroupValue = {}
+			
+			local GroupContainer = Instance.new("Frame")
+			GroupContainer.Name = RadioButtonGroupSettings.Name
+			GroupContainer.Size = UDim2.new(1, -10, 0, 20 + (#RadioButtonGroupSettings.Options * 30))
+			GroupContainer.BackgroundTransparency = 1
+			GroupContainer.Parent = TabPage
+			GroupContainer.Visible = true
+			
+			-- Title
+			local GroupTitle = Instance.new("TextLabel")
+			GroupTitle.Name = "Title"
+			GroupTitle.Size = UDim2.new(1, 0, 0, 20)
+			GroupTitle.Position = UDim2.new(0, 0, 0, 0)
+			GroupTitle.BackgroundTransparency = 1
+			GroupTitle.Text = RadioButtonGroupSettings.Name
+			GroupTitle.TextColor3 = SelectedTheme.TextColor
+			GroupTitle.TextSize = 14
+			GroupTitle.Font = Enum.Font.Gotham
+			GroupTitle.TextXAlignment = Enum.TextXAlignment.Left
+			GroupTitle.Parent = GroupContainer
+			
+			local radioButtons = {}
+			local selectedOption = RadioButtonGroupSettings.CurrentOption or RadioButtonGroupSettings.Options[1]
+			
+			for i, option in ipairs(RadioButtonGroupSettings.Options) do
+				local RadioButton = Instance.new("TextButton")
+				RadioButton.Name = option
+				RadioButton.Size = UDim2.new(1, 0, 0, 25)
+				RadioButton.Position = UDim2.new(0, 0, 0, 20 + (i-1) * 30)
+				RadioButton.BackgroundTransparency = 1
+				RadioButton.Text = ""
+				RadioButton.Parent = GroupContainer
+				
+				-- Radio circle
+				local RadioCircle = Instance.new("Frame")
+				RadioCircle.Name = "RadioCircle"
+				RadioCircle.Size = UDim2.new(0, 16, 0, 16)
+				RadioCircle.Position = UDim2.new(0, 0, 0.5, -8)
+				RadioCircle.BackgroundColor3 = SelectedTheme.ElementBackground
+				RadioCircle.BorderSizePixel = 0
+				RadioCircle.Parent = RadioButton
+				
+				local RadioCircleStroke = Instance.new("UIStroke")
+				RadioCircleStroke.Color = SelectedTheme.ElementStroke
+				RadioCircleStroke.Thickness = 1
+				RadioCircleStroke.Parent = RadioCircle
+				
+				-- Radio inner circle (for selected state)
+				local RadioInner = Instance.new("Frame")
+				RadioInner.Name = "RadioInner"
+				RadioInner.Size = UDim2.new(0, 8, 0, 8)
+				RadioInner.Position = UDim2.new(0.5, -4, 0.5, -4)
+				RadioInner.BackgroundColor3 = SelectedTheme.SliderProgress
+				RadioInner.BorderSizePixel = 0
+				RadioInner.Visible = (option == selectedOption)
+				RadioInner.Parent = RadioCircle
+				
+				-- Option text
+				local OptionText = Instance.new("TextLabel")
+				OptionText.Name = "OptionText"
+				OptionText.Size = UDim2.new(1, -25, 1, 0)
+				OptionText.Position = UDim2.new(0, 25, 0, 0)
+				OptionText.BackgroundTransparency = 1
+				OptionText.Text = option
+				OptionText.TextColor3 = SelectedTheme.TextColor
+				OptionText.TextSize = 13
+				OptionText.Font = Enum.Font.Gotham
+				OptionText.TextXAlignment = Enum.TextXAlignment.Left
+				OptionText.Parent = RadioButton
+				
+				radioButtons[option] = {
+					Button = RadioButton,
+					Circle = RadioCircle,
+					Inner = RadioInner,
+					Text = OptionText
+				}
+				
+				RadioButton.MouseButton1Click:Connect(function()
+					-- Deselect all
+					for opt, data in pairs(radioButtons) do
+						data.Inner.Visible = false
+					end
+					-- Select clicked
+					RadioInner.Visible = true
+					selectedOption = option
+					
+					if RadioButtonGroupSettings.Callback then
+						local Success, Response = pcall(function()
+							RadioButtonGroupSettings.Callback(option)
+						end)
+						if not Success then
+							print("Rayfield | "..RadioButtonGroupSettings.Name.." Callback Error " ..tostring(Response))
+						end
+					end
+					
+					if not RadioButtonGroupSettings.Ext then
+						SaveConfiguration()
+					end
+				end)
+			end
+			
+			-- Set function
+			function RadioButtonGroupValue:Set(NewOption)
+				if radioButtons[NewOption] then
+					for opt, data in pairs(radioButtons) do
+						data.Inner.Visible = false
+					end
+					radioButtons[NewOption].Inner.Visible = true
+					selectedOption = NewOption
+					
+					if RadioButtonGroupSettings.Callback then
+						local Success, Response = pcall(function()
+							RadioButtonGroupSettings.Callback(NewOption)
+						end)
+						if not Success then
+							print("Rayfield | "..RadioButtonGroupSettings.Name.." Callback Error " ..tostring(Response))
+						end
+					end
+				end
+			end
+			
+			-- Get function
+			function RadioButtonGroupValue:Get()
+				return selectedOption
+			end
+			
+			-- Theme update
+			Rayfield.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				for _, data in pairs(radioButtons) do
+					data.Circle.BackgroundColor3 = SelectedTheme.ElementBackground
+					data.Circle.UIStroke.Color = SelectedTheme.ElementStroke
+					data.Inner.BackgroundColor3 = SelectedTheme.SliderProgress
+					data.Text.TextColor3 = SelectedTheme.TextColor
+				end
+				GroupTitle.TextColor3 = SelectedTheme.TextColor
+			end)
+			
+			return RadioButtonGroupValue
+		end
+
+		-- CheckboxGroup
+		function Tab:CreateCheckboxGroup(CheckboxGroupSettings)
+			local CheckboxGroupValue = {}
+			
+			local GroupContainer = Instance.new("Frame")
+			GroupContainer.Name = CheckboxGroupSettings.Name
+			GroupContainer.Size = UDim2.new(1, -10, 0, 20 + (#CheckboxGroupSettings.Options * 30))
+			GroupContainer.BackgroundTransparency = 1
+			GroupContainer.Parent = TabPage
+			GroupContainer.Visible = true
+			
+			-- Title
+			local GroupTitle = Instance.new("TextLabel")
+			GroupTitle.Name = "Title"
+			GroupTitle.Size = UDim2.new(1, 0, 0, 20)
+			GroupTitle.Position = UDim2.new(0, 0, 0, 0)
+			GroupTitle.BackgroundTransparency = 1
+			GroupTitle.Text = CheckboxGroupSettings.Name
+			GroupTitle.TextColor3 = SelectedTheme.TextColor
+			GroupTitle.TextSize = 14
+			GroupTitle.Font = Enum.Font.Gotham
+			GroupTitle.TextXAlignment = Enum.TextXAlignment.Left
+			GroupTitle.Parent = GroupContainer
+			
+			local checkboxes = {}
+			local selectedOptions = CheckboxGroupSettings.CurrentOptions or {}
+			
+			for i, option in ipairs(CheckboxGroupSettings.Options) do
+				local Checkbox = Instance.new("TextButton")
+				Checkbox.Name = option
+				Checkbox.Size = UDim2.new(1, 0, 0, 25)
+				Checkbox.Position = UDim2.new(0, 0, 0, 20 + (i-1) * 30)
+				Checkbox.BackgroundTransparency = 1
+				Checkbox.Text = ""
+				Checkbox.Parent = GroupContainer
+				
+				-- Checkbox square
+				local CheckboxSquare = Instance.new("Frame")
+				CheckboxSquare.Name = "CheckboxSquare"
+				CheckboxSquare.Size = UDim2.new(0, 16, 0, 16)
+				CheckboxSquare.Position = UDim2.new(0, 0, 0.5, -8)
+				CheckboxSquare.BackgroundColor3 = SelectedTheme.ElementBackground
+				CheckboxSquare.BorderSizePixel = 0
+				CheckboxSquare.Parent = Checkbox
+				
+				local CheckboxSquareStroke = Instance.new("UIStroke")
+				CheckboxSquareStroke.Color = SelectedTheme.ElementStroke
+				CheckboxSquareStroke.Thickness = 1
+				CheckboxSquareStroke.Parent = CheckboxSquare
+				
+				-- Checkmark (for selected state)
+				local Checkmark = Instance.new("TextLabel")
+				Checkmark.Name = "Checkmark"
+				Checkmark.Size = UDim2.new(1, 0, 1, 0)
+				Checkmark.BackgroundTransparency = 1
+				Checkmark.Text = "✓"
+				Checkmark.TextColor3 = SelectedTheme.SliderProgress
+				Checkmark.TextSize = 12
+				Checkmark.Font = Enum.Font.GothamBold
+				Checkmark.TextTransparency = (table.find(selectedOptions, option) and 0) or 1
+				Checkmark.Parent = CheckboxSquare
+				
+				-- Option text
+				local OptionText = Instance.new("TextLabel")
+				OptionText.Name = "OptionText"
+				OptionText.Size = UDim2.new(1, -25, 1, 0)
+				OptionText.Position = UDim2.new(0, 25, 0, 0)
+				OptionText.BackgroundTransparency = 1
+				OptionText.Text = option
+				OptionText.TextColor3 = SelectedTheme.TextColor
+				OptionText.TextSize = 13
+				OptionText.Font = Enum.Font.Gotham
+				OptionText.TextXAlignment = Enum.TextXAlignment.Left
+				OptionText.Parent = Checkbox
+				
+				checkboxes[option] = {
+					Button = Checkbox,
+					Square = CheckboxSquare,
+					Checkmark = Checkmark,
+					Text = OptionText
+				}
+				
+				Checkbox.MouseButton1Click:Connect(function()
+					local isSelected = table.find(selectedOptions, option)
+					
+					if isSelected then
+						-- Remove from selected
+						table.remove(selectedOptions, table.find(selectedOptions, option))
+						Checkmark.TextTransparency = 1
+					else
+						-- Add to selected
+						table.insert(selectedOptions, option)
+						Checkmark.TextTransparency = 0
+					end
+					
+					if CheckboxGroupSettings.Callback then
+						local Success, Response = pcall(function()
+							CheckboxGroupSettings.Callback(selectedOptions)
+						end)
+						if not Success then
+							print("Rayfield | "..CheckboxGroupSettings.Name.." Callback Error " ..tostring(Response))
+						end
+					end
+					
+					if not CheckboxGroupSettings.Ext then
+						SaveConfiguration()
+					end
+				end)
+			end
+			
+			-- Set function
+			function CheckboxGroupValue:Set(NewOptions)
+				selectedOptions = NewOptions or {}
+				for option, data in pairs(checkboxes) do
+					local isSelected = table.find(selectedOptions, option)
+					data.Checkmark.TextTransparency = (isSelected and 0) or 1
+				end
+				
+				if CheckboxGroupSettings.Callback then
+					local Success, Response = pcall(function()
+						CheckboxGroupSettings.Callback(selectedOptions)
+					end)
+					if not Success then
+						print("Rayfield | "..CheckboxGroupSettings.Name.." Callback Error " ..tostring(Response))
+					end
+				end
+			end
+			
+			-- Get function
+			function CheckboxGroupValue:Get()
+				return selectedOptions
+			end
+			
+			-- Theme update
+			Rayfield.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				for _, data in pairs(checkboxes) do
+					data.Square.BackgroundColor3 = SelectedTheme.ElementBackground
+					data.Square.UIStroke.Color = SelectedTheme.ElementStroke
+					data.Checkmark.TextColor3 = SelectedTheme.SliderProgress
+					data.Text.TextColor3 = SelectedTheme.TextColor
+				end
+				GroupTitle.TextColor3 = SelectedTheme.TextColor
+			end)
+			
+			return CheckboxGroupValue
+		end
+
+		-- InternalTabs
+		function Tab:CreateInternalTabs(InternalTabsSettings)
+			local InternalTabsValue = {}
+			
+			local TabsContainer = Instance.new("Frame")
+			TabsContainer.Name = InternalTabsSettings.Name
+			TabsContainer.Size = UDim2.new(1, -10, 0, 150)
+			TabsContainer.BackgroundTransparency = 1
+			TabsContainer.Parent = TabPage
+			TabsContainer.Visible = true
+			
+			-- Tab buttons container
+			local TabButtonsContainer = Instance.new("Frame")
+			TabButtonsContainer.Name = "TabButtonsContainer"
+			TabButtonsContainer.Size = UDim2.new(1, 0, 0, 30)
+			TabButtonsContainer.BackgroundTransparency = 1
+			TabButtonsContainer.Parent = TabsContainer
+			
+			-- Content container
+			local ContentContainer = Instance.new("Frame")
+			ContentContainer.Name = "ContentContainer"
+			ContentContainer.Size = UDim2.new(1, 0, 1, -30)
+			ContentContainer.Position = UDim2.new(0, 0, 0, 30)
+			ContentContainer.BackgroundTransparency = 1
+			ContentContainer.Parent = TabsContainer
+			
+			local tabButtons = {}
+			local tabContents = {}
+			local selectedTab = InternalTabsSettings.CurrentTab or InternalTabsSettings.Tabs[1]
+			
+			for i, tabName in ipairs(InternalTabsSettings.Tabs) do
+				-- Tab button
+				local TabButton = Instance.new("TextButton")
+				TabButton.Name = tabName
+				TabButton.Size = UDim2.new(1 / #InternalTabsSettings.Tabs, -2, 1, 0)
+				TabButton.Position = UDim2.new((i-1) * (1 / #InternalTabsSettings.Tabs), 0, 0, 0)
+				TabButton.BackgroundColor3 = (tabName == selectedTab) and SelectedTheme.TabBackgroundSelected or SelectedTheme.TabBackground
+				TabButton.BorderSizePixel = 0
+				TabButton.Text = tabName
+				TabButton.TextColor3 = (tabName == selectedTab) and SelectedTheme.SelectedTabTextColor or SelectedTheme.TabTextColor
+				TabButton.TextSize = 13
+				TabButton.Font = Enum.Font.Gotham
+				TabButton.Parent = TabButtonsContainer
+				
+				local TabButtonStroke = Instance.new("UIStroke")
+				TabButtonStroke.Color = SelectedTheme.TabStroke
+				TabButtonStroke.Thickness = 1
+				TabButtonStroke.Transparency = (tabName == selectedTab) and 0 or 1
+				TabButtonStroke.Parent = TabButton
+				
+				-- Tab content
+				local TabContent = Instance.new("Frame")
+				TabContent.Name = tabName .. "Content"
+				TabContent.Size = UDim2.new(1, 0, 1, 0)
+				TabContent.BackgroundTransparency = 1
+				TabContent.Visible = (tabName == selectedTab)
+				TabContent.Parent = ContentContainer
+				
+				tabButtons[tabName] = {
+					Button = TabButton,
+					Stroke = TabButtonStroke
+				}
+				tabContents[tabName] = TabContent
+				
+				TabButton.MouseButton1Click:Connect(function()
+					-- Update all buttons
+					for name, data in pairs(tabButtons) do
+						data.Button.BackgroundColor3 = SelectedTheme.TabBackground
+						data.Button.TextColor3 = SelectedTheme.TabTextColor
+						data.Stroke.Transparency = 1
+					end
+					-- Update selected button
+					TabButton.BackgroundColor3 = SelectedTheme.TabBackgroundSelected
+					TabButton.TextColor3 = SelectedTheme.SelectedTabTextColor
+					TabButtonStroke.Transparency = 0
+					
+					-- Update content visibility
+					for name, content in pairs(tabContents) do
+						content.Visible = false
+					end
+					TabContent.Visible = true
+					
+					selectedTab = tabName
+					
+					if InternalTabsSettings.Callback then
+						local Success, Response = pcall(function()
+							InternalTabsSettings.Callback(tabName)
+						end)
+						if not Success then
+							print("Rayfield | "..InternalTabsSettings.Name.." Callback Error " ..tostring(Response))
+						end
+					end
+				end)
+			end
+			
+			-- Set function
+			function InternalTabsValue:Set(NewTab)
+				if tabButtons[NewTab] then
+					for name, data in pairs(tabButtons) do
+						data.Button.BackgroundColor3 = SelectedTheme.TabBackground
+						data.Button.TextColor3 = SelectedTheme.TabTextColor
+						data.Stroke.Transparency = 1
+					end
+					tabButtons[NewTab].Button.BackgroundColor3 = SelectedTheme.TabBackgroundSelected
+					tabButtons[NewTab].Button.TextColor3 = SelectedTheme.SelectedTabTextColor
+					tabButtons[NewTab].Stroke.Transparency = 0
+					
+					for name, content in pairs(tabContents) do
+						content.Visible = false
+					end
+					tabContents[NewTab].Visible = true
+					
+					selectedTab = NewTab
+					
+					if InternalTabsSettings.Callback then
+						local Success, Response = pcall(function()
+							InternalTabsSettings.Callback(NewTab)
+						end)
+						if not Success then
+							print("Rayfield | "..InternalTabsSettings.Name.." Callback Error " ..tostring(Response))
+						end
+					end
+				end
+			end
+			
+			-- Get function
+			function InternalTabsValue:Get()
+				return selectedTab
+			end
+			
+			-- Get content frame for adding elements
+			function InternalTabsValue:GetContent(tabName)
+				return tabContents[tabName]
+			end
+			
+			-- Theme update
+			Rayfield.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				for name, data in pairs(tabButtons) do
+					if name == selectedTab then
+						data.Button.BackgroundColor3 = SelectedTheme.TabBackgroundSelected
+						data.Button.TextColor3 = SelectedTheme.SelectedTabTextColor
+						data.Stroke.Color = SelectedTheme.TabStroke
+						data.Stroke.Transparency = 0
+					else
+						data.Button.BackgroundColor3 = SelectedTheme.TabBackground
+						data.Button.TextColor3 = SelectedTheme.TabTextColor
+						data.Stroke.Color = SelectedTheme.TabStroke
+						data.Stroke.Transparency = 1
+					end
+				end
+			end)
+			
+			return InternalTabsValue
+		end
+
 		Rayfield.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
 			TabButton.UIStroke.Color = SelectedTheme.TabStroke
 
